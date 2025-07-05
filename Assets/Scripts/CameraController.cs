@@ -14,15 +14,14 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float shoulderOffset = 0.5f; // Slight over-shoulder offset
 
     [Header("Rotation Settings")]
-    [SerializeField] private float rotationSpeed = 2.5f; // Reduziert von 5f für WoW-Feel
+    [SerializeField] private float rotationSpeed = 1.5f; // Deutlich langsamer für WoW-Feel
     [SerializeField] private float minVerticalAngle = -40f;
     [SerializeField] private float maxVerticalAngle = 80f;
     [SerializeField] private bool invertY = false; // Option für invertierte Y-Achse
 
     [Header("Smoothing")]
-    [SerializeField] private float positionSmoothTime = 0.1f;
-    [SerializeField] private float rotationSmoothTime = 0.08f; // NEU: Smoothing für Rotation
-    [SerializeField] private float followSmoothTime = 0.15f; // NEU: Separates Follow-Smoothing
+    [SerializeField] private bool useRotationSmoothing = false; // NEU: Optional machen
+    [SerializeField] private float rotationSmoothTime = 0.08f; // Nur wenn aktiviert
 
     [Header("Collision")]
     [SerializeField] private float collisionRadius = 0.3f;
@@ -33,8 +32,8 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float zoomSmoothTime = 0.1f;
 
     [Header("Mouse Sensitivity")]
-    [SerializeField] private float mouseSensitivityX = 1f; // NEU: Separate Sensitivität
-    [SerializeField] private float mouseSensitivityY = 1f;
+    [SerializeField] private float mouseSensitivityX = 0.8f; // Reduziert für präzisere Kontrolle
+    [SerializeField] private float mouseSensitivityY = 0.8f;
 
     // Current state
     private float currentDistance;
@@ -45,8 +44,6 @@ public class CameraController : MonoBehaviour
     private float targetRotationY = 0f;
 
     // Smoothing variables
-    private Vector3 currentPosition;
-    private Vector3 positionVelocity;
     private float distanceVelocity;
     private float rotationXVelocity; // NEU
     private float rotationYVelocity; // NEU
@@ -57,6 +54,7 @@ public class CameraController : MonoBehaviour
     private bool middleMouseHeld;
 
     // NEU: Dead zone für präzisere Kontrolle
+    [SerializeField] private bool useDeadZone = false;
     private float mouseDeadZone = 0.001f;
 
     void Start()
@@ -73,7 +71,6 @@ public class CameraController : MonoBehaviour
         // Initialize camera position
         currentDistance = distance;
         targetDistance = distance;
-        currentPosition = transform.position;
 
         // Set initial rotation from current transform
         Vector3 angles = transform.eulerAngles;
@@ -112,9 +109,12 @@ public class CameraController : MonoBehaviour
             float mouseX = Input.GetAxis("Mouse X");
             float mouseY = Input.GetAxis("Mouse Y");
 
-            // Apply dead zone
-            if (Mathf.Abs(mouseX) < mouseDeadZone) mouseX = 0f;
-            if (Mathf.Abs(mouseY) < mouseDeadZone) mouseY = 0f;
+            // Apply dead zone nur wenn aktiviert
+            if (useDeadZone)
+            {
+                if (Mathf.Abs(mouseX) < mouseDeadZone) mouseX = 0f;
+                if (Mathf.Abs(mouseY) < mouseDeadZone) mouseY = 0f;
+            }
 
             // Apply sensitivity
             mouseX *= mouseSensitivityX;
@@ -129,9 +129,19 @@ public class CameraController : MonoBehaviour
             targetRotationX = Mathf.Clamp(targetRotationX, minVerticalAngle, maxVerticalAngle);
         }
 
-        // Smooth rotation interpolation
-        rotationX = Mathf.SmoothDampAngle(rotationX, targetRotationX, ref rotationXVelocity, rotationSmoothTime);
-        rotationY = Mathf.SmoothDampAngle(rotationY, targetRotationY, ref rotationYVelocity, rotationSmoothTime);
+        // Direkte oder smooth rotation
+        if (useRotationSmoothing)
+        {
+            // Smooth rotation interpolation
+            rotationX = Mathf.SmoothDampAngle(rotationX, targetRotationX, ref rotationXVelocity, rotationSmoothTime);
+            rotationY = Mathf.SmoothDampAngle(rotationY, targetRotationY, ref rotationYVelocity, rotationSmoothTime);
+        }
+        else
+        {
+            // Direkte Rotation ohne Smoothing - sofortiger Stop!
+            rotationX = targetRotationX;
+            rotationY = targetRotationY;
+        }
     }
 
     void HandleZoom()
@@ -163,14 +173,8 @@ public class CameraController : MonoBehaviour
         Vector3 rightOffset = rotation * Vector3.right * shoulderOffset;
         desiredPosition += rightOffset;
 
-        // Different smoothing based on camera mode
-        float smoothTime = (leftMouseHeld || rightMouseHeld) ? positionSmoothTime : followSmoothTime;
-
-        // Smooth camera movement
-        currentPosition = Vector3.SmoothDamp(currentPosition, desiredPosition, ref positionVelocity, smoothTime);
-
-        // Apply position and rotation
-        transform.position = currentPosition;
+        // KEINE SMOOTHING - Direkte Position!
+        transform.position = desiredPosition;
         transform.rotation = rotation;
     }
 
@@ -192,7 +196,6 @@ public class CameraController : MonoBehaviour
 
             Vector3 adjustedPosition = targetPoint + directionToCamera * hitDistance;
             transform.position = adjustedPosition;
-            currentPosition = adjustedPosition;
 
             // Update current distance for smooth recovery
             currentDistance = hitDistance;

@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
+  - component: {fileID: 330585548}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -256,6 +257,36 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!114 &330585548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 596514eee8d2d504d8ca466187a9e435, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 0}
+  distance: 5
+  minDistance: 2
+  maxDistance: 15
+  height: 2
+  heightOffset: 1.65
+  shoulderOffset: 0.5
+  rotationSpeed: 5
+  minVerticalAngle: -40
+  maxVerticalAngle: 80
+  positionSmoothTime: 0.1
+  rotationSmoothTime: 0.05
+  collisionRadius: 0.3
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  zoomSpeed: 4
+  zoomSmoothTime: 0.1
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -546,6 +577,7 @@ GameObject:
   m_Component:
   - component: {fileID: 985291477}
   - component: {fileID: 985291476}
+  - component: {fileID: 985291478}
   m_Layer: 6
   m_Name: Player
   m_TagString: Untagged
@@ -594,6 +626,29 @@ Transform:
   - {fileID: 460308845}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &985291478
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 985291475}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7accecf5a0c3f9f4ead39859e792fed0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  walkSpeed: 7
+  backwardSpeed: 4.5
+  strafeSpeed: 6.5
+  rotationSpeed: 540
+  jumpHeight: 2
+  gravity: -19.62
+  groundCheckRadius: 0.4
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 0
+  cameraController: {fileID: 0}
 --- !u!1 &1883585400
 GameObject:
   m_ObjectHideFlags: 0

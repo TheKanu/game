@@ -12,6 +12,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float groundCheckRadius = 0.4f;
     [SerializeField] private LayerMask groundMask;
 
+    [Header("Air Control")]
+    [SerializeField] private float airControl = 0.65f; // Wie stark man in der Luft steuern kann (0-1)
+    [SerializeField] private float airAcceleration = 18f; // Beschleunigung in der Luft
+    [SerializeField] private float maxAirSpeed = 7f; // Maximale Geschwindigkeit in der Luft
+
     [Header("Camera Reference")]
     [SerializeField] private CameraController cameraController;
 
@@ -20,9 +25,9 @@ public class PlayerController : MonoBehaviour
 
     // Movement state
     private Vector3 velocity;
+    private Vector3 horizontalVelocity; // Separate horizontale Geschwindigkeit
     private bool isGrounded;
     private bool wasGrounded;
-    private float jumpMomentum;
     private bool isAutorunning = false;
     private float autorunToggleCooldown = 0f;
 
@@ -66,6 +71,10 @@ public class PlayerController : MonoBehaviour
         HandleRotation();
         HandleJump();
         HandleGravity();
+
+        // Combine horizontal and vertical velocity
+        velocity.x = horizontalVelocity.x;
+        velocity.z = horizontalVelocity.z;
 
         // Apply final movement
         controller.Move(velocity * Time.deltaTime);
@@ -114,8 +123,8 @@ public class PlayerController : MonoBehaviour
         // Landing detection
         if (!wasGrounded && isGrounded)
         {
-            // Reset jump momentum on landing
-            jumpMomentum = 0f;
+            // Smooth landing - don't abruptly stop horizontal movement
+            // Just let ground movement take over naturally
         }
     }
 
@@ -178,17 +187,33 @@ public class PlayerController : MonoBehaviour
             currentSpeed = strafeSpeed;
         }
 
-        // Apply movement with jump momentum
-        Vector3 horizontalVelocity = moveDirection * currentSpeed;
-
-        // Preserve some momentum while jumping (WoW-style)
-        if (!isGrounded && jumpMomentum > 0)
+        // Ground movement vs Air control
+        if (isGrounded)
         {
-            horizontalVelocity = Vector3.Lerp(horizontalVelocity, moveDirection * currentSpeed * 1.1f, jumpMomentum);
+            // Direct control on ground
+            horizontalVelocity = moveDirection * currentSpeed;
         }
+        else
+        {
+            // Air control - kann Bewegung beeinflussen aber nicht sofort stoppen
+            if (moveDirection.magnitude > 0.1f)
+            {
+                Vector3 targetVelocity = moveDirection * currentSpeed * 0.8f; // 80% der Bodengeschwindigkeit
 
-        velocity.x = horizontalVelocity.x;
-        velocity.z = horizontalVelocity.z;
+                // Direkte Luftbewegung für bessere Kontrolle
+                Vector3 velocityChange = targetVelocity - horizontalVelocity;
+                velocityChange *= airControl;
+
+                horizontalVelocity += velocityChange * airAcceleration * Time.deltaTime;
+
+                // Begrenze maximale Luftgeschwindigkeit
+                if (horizontalVelocity.magnitude > maxAirSpeed)
+                {
+                    horizontalVelocity = horizontalVelocity.normalized * maxAirSpeed;
+                }
+            }
+            // Kein Input = behalte momentum (keine Bremsung in der Luft)
+        }
     }
 
     void HandleRotation()
@@ -206,10 +231,10 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Face movement direction when moving without right mouse
-        if (!rightMouseHeld && !bothMouseHeld && (horizontal != 0 || vertical != 0))
+        // Face movement direction when moving without right mouse (nur am Boden!)
+        if (!rightMouseHeld && !bothMouseHeld && (horizontal != 0 || vertical != 0) && isGrounded)
         {
-            Vector3 moveDirection = new Vector3(velocity.x, 0, velocity.z);
+            Vector3 moveDirection = new Vector3(horizontalVelocity.x, 0, horizontalVelocity.z);
             if (moveDirection != Vector3.zero)
             {
                 targetRotation = Quaternion.LookRotation(moveDirection);
@@ -226,15 +251,31 @@ public class PlayerController : MonoBehaviour
             // Calculate jump velocity
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
 
-            // Store jump momentum for air control
-            jumpMomentum = 1f;
-        }
+            // Bei Bewegungsinput beim Springen: Leichter Geschwindigkeitsboost
+            if (horizontal != 0 || vertical != 0)
+            {
+                // Füge einen kleinen Boost in Bewegungsrichtung hinzu
+                Vector3 inputDirection = new Vector3(horizontal, 0, vertical).normalized;
+                Vector3 moveBoost = Vector3.zero;
 
-        // Reduce jump momentum over time
-        if (!isGrounded && jumpMomentum > 0)
-        {
-            jumpMomentum -= Time.deltaTime * 2f; // Decay rate
-            jumpMomentum = Mathf.Clamp01(jumpMomentum);
+                if (rightMouseHeld)
+                {
+                    moveBoost = transform.forward * vertical + transform.right * horizontal;
+                }
+                else
+                {
+                    Vector3 camForward = cameraController.transform.forward;
+                    Vector3 camRight = cameraController.transform.right;
+                    camForward.y = 0;
+                    camRight.y = 0;
+                    camForward.Normalize();
+                    camRight.Normalize();
+                    moveBoost = camForward * vertical + camRight * horizontal;
+                }
+
+                // Füge 30% der Walk-Speed als Boost hinzu
+                horizontalVelocity += moveBoost.normalized * walkSpeed * 0.3f;
+            }
         }
     }
 
@@ -261,5 +302,12 @@ public class PlayerController : MonoBehaviour
         Gizmos.color = Color.red;
         Vector3 spherePosition = transform.position + Vector3.down * 0.1f;
         Gizmos.DrawWireSphere(spherePosition, groundCheckRadius);
+
+        // Zeige aktuelle Geschwindigkeit
+        if (Application.isPlaying)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawRay(transform.position, horizontalVelocity);
+        }
     }
 }

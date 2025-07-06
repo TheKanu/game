@@ -116,29 +116,27 @@ public class CameraController : MonoBehaviour
                 if (Mathf.Abs(mouseY) < mouseDeadZone) mouseY = 0f;
             }
 
-            // Apply sensitivity
-            mouseX *= mouseSensitivityX;
-            mouseY *= mouseSensitivityY;
+            // Apply sensitivity **AND** rotation speed
+            mouseX *= mouseSensitivityX * rotationSpeed;
+            mouseY *= mouseSensitivityY * rotationSpeed;
 
             // Horizontal rotation
-            targetRotationY += mouseX * rotationSpeed;
+            targetRotationY += mouseX;
 
             // Vertical rotation with clamping
             float yInput = invertY ? mouseY : -mouseY;
-            targetRotationX += yInput * rotationSpeed;
+            targetRotationX += yInput;
             targetRotationX = Mathf.Clamp(targetRotationX, minVerticalAngle, maxVerticalAngle);
         }
 
         // Direkte oder smooth rotation
         if (useRotationSmoothing)
         {
-            // Smooth rotation interpolation
             rotationX = Mathf.SmoothDampAngle(rotationX, targetRotationX, ref rotationXVelocity, rotationSmoothTime);
             rotationY = Mathf.SmoothDampAngle(rotationY, targetRotationY, ref rotationYVelocity, rotationSmoothTime);
         }
         else
         {
-            // Direkte Rotation ohne Smoothing - sofortiger Stop!
             rotationX = targetRotationX;
             rotationY = targetRotationY;
         }
@@ -146,7 +144,6 @@ public class CameraController : MonoBehaviour
 
     void HandleZoom()
     {
-        // Mouse wheel zoom
         float scrollInput = Input.GetAxis("Mouse ScrollWheel");
         if (scrollInput != 0)
         {
@@ -154,26 +151,17 @@ public class CameraController : MonoBehaviour
             targetDistance = Mathf.Clamp(targetDistance, minDistance, maxDistance);
         }
 
-        // Smooth zoom
         currentDistance = Mathf.SmoothDamp(currentDistance, targetDistance, ref distanceVelocity, zoomSmoothTime);
     }
 
     void HandleCameraPosition()
     {
-        // Calculate desired position
         Quaternion rotation = Quaternion.Euler(rotationX, rotationY, 0);
-
-        // Target position with height offset (character eye level)
         Vector3 targetPoint = target.position + Vector3.up * heightOffset;
-
-        // Calculate camera offset
         Vector3 desiredPosition = targetPoint - rotation * Vector3.forward * currentDistance;
-
-        // Add slight shoulder offset for WoW feel
         Vector3 rightOffset = rotation * Vector3.right * shoulderOffset;
         desiredPosition += rightOffset;
 
-        // KEINE SMOOTHING - Direkte Position!
         transform.position = desiredPosition;
         transform.rotation = rotation;
     }
@@ -186,18 +174,15 @@ public class CameraController : MonoBehaviour
         Vector3 directionToCamera = (transform.position - targetPoint).normalized;
         float distanceToTarget = Vector3.Distance(transform.position, targetPoint);
 
-        // Raycast from target to camera
         RaycastHit hit;
         if (Physics.SphereCast(targetPoint, collisionRadius, directionToCamera, out hit, distanceToTarget, collisionLayers))
         {
-            // Adjust camera position to avoid collision
             float hitDistance = Vector3.Distance(targetPoint, hit.point) - collisionRadius;
             hitDistance = Mathf.Max(minDistance, hitDistance);
 
             Vector3 adjustedPosition = targetPoint + directionToCamera * hitDistance;
             transform.position = adjustedPosition;
 
-            // Update current distance for smooth recovery
             currentDistance = hitDistance;
         }
     }
@@ -207,7 +192,6 @@ public class CameraController : MonoBehaviour
         target = newTarget;
     }
 
-    // For smooth transitions
     public void SetRotation(float x, float y)
     {
         rotationX = x;
@@ -221,14 +205,12 @@ public class CameraController : MonoBehaviour
         targetDistance = Mathf.Clamp(newDistance, minDistance, maxDistance);
     }
 
-    // NEU: Methode zum Anpassen der Sensitivität zur Laufzeit
     public void SetMouseSensitivity(float x, float y)
     {
         mouseSensitivityX = Mathf.Clamp(x, 0.1f, 3f);
         mouseSensitivityY = Mathf.Clamp(y, 0.1f, 3f);
     }
 
-    // For debugging
     void OnDrawGizmosSelected()
     {
         if (!target) return;

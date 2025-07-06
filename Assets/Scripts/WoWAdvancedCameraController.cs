@@ -119,8 +119,8 @@ public class WoWAdvancedCameraController : MonoBehaviour
         mouseInputX = 0f;
         mouseInputY = 0f;
 
-        // Mouse input (RMB, LMB, or MMB held)
-        if (Input.GetMouseButton(0) || Input.GetMouseButton(1) || Input.GetMouseButton(2))
+        // Mouse input (RMB or MMB held - NOT LMB!)
+        if (Input.GetMouseButton(1) || Input.GetMouseButton(2))
         {
             mouseInputX = Input.GetAxis("Mouse X");
             mouseInputY = Input.GetAxis("Mouse Y");

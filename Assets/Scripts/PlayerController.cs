@@ -159,12 +159,12 @@ public class PlayerController : NetworkBehaviour
             // Calculate move direction
             if (rightMouseHeld)
             {
-                // Right mouse held: character moves relative to its own rotation
-                moveDirection = transform.forward * vertical + transform.right * horizontal;
+                // WoW-Style: Mit rechter Maustaste bewegt sich der Character relativ zur Kamera
+                moveDirection = cameraForward * vertical + cameraRight * horizontal;
             }
             else
             {
-                // No right mouse: character moves relative to camera
+                // Ohne rechte Maus: Character bewegt sich auch relativ zur Kamera
                 moveDirection = cameraForward * vertical + cameraRight * horizontal;
             }
         }
@@ -219,21 +219,22 @@ public class PlayerController : NetworkBehaviour
 
     void HandleRotation()
     {
-        // Only rotate character with right mouse button
-        if (rightMouseHeld && !bothMouseHeld)
+        // WoW-Style: Rechte Maustaste = Character schaut IMMER in Kamera-Richtung
+        if (rightMouseHeld)
         {
-            float mouseX = Input.GetAxis("Mouse X");
+            // Character rotiert immer zur Kamera-Richtung
+            Vector3 cameraForward = cameraController.transform.forward;
+            cameraForward.y = 0; // Nur horizontale Rotation
 
-            if (Mathf.Abs(mouseX) > 0.01f)
+            if (cameraForward != Vector3.zero)
             {
-                // Rotate character with camera
-                float rotationAmount = mouseX * rotationSpeed * Time.deltaTime;
-                transform.Rotate(0, rotationAmount, 0);
+                targetRotation = Quaternion.LookRotation(cameraForward);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation,
+                    Time.deltaTime * 15f); // Schnelle Rotation zur Kamera
             }
         }
-
-        // Face movement direction when moving without right mouse (nur am Boden!)
-        if (!rightMouseHeld && !bothMouseHeld && (horizontal != 0 || vertical != 0) && isGrounded)
+        // Ohne rechte Maustaste: Character dreht sich in Bewegungsrichtung (nur am Boden)
+        else if (!bothMouseHeld && (horizontal != 0 || vertical != 0) && isGrounded)
         {
             Vector3 moveDirection = new Vector3(horizontalVelocity.x, 0, horizontalVelocity.z);
             if (moveDirection != Vector3.zero)

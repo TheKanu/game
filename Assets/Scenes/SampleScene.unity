@@ -529,9 +529,8 @@ MonoBehaviour:
   minVerticalAngle: -40
   maxVerticalAngle: 80
   invertY: 0
-  positionSmoothTime: 0.1
+  useRotationSmoothing: 0
   rotationSmoothTime: 0.05
-  followSmoothTime: 0.15
   collisionRadius: 0.3
   collisionLayers:
     serializedVersion: 2
@@ -540,6 +539,7 @@ MonoBehaviour:
   zoomSmoothTime: 0.1
   mouseSensitivityX: 1
   mouseSensitivityY: 1
+  useDeadZone: 0
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -892,6 +892,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7accecf5a0c3f9f4ead39859e792fed0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   walkSpeed: 7
   backwardSpeed: 4.5
   strafeSpeed: 6.5

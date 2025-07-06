@@ -14,7 +14,7 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float shoulderOffset = 0.5f; // Slight over-shoulder offset
 
     [Header("Rotation Settings")]
-    [SerializeField] private float rotationSpeed = 1.5f; // Deutlich langsamer für WoW-Feel
+    [SerializeField] private float rotationSpeed = 0.2f; // Deutlich langsamer für WoW-Feel
     [SerializeField] private float minVerticalAngle = -40f;
     [SerializeField] private float maxVerticalAngle = 80f;
     [SerializeField] private bool invertY = false; // Option für invertierte Y-Achse
@@ -32,8 +32,8 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float zoomSmoothTime = 0.1f;
 
     [Header("Mouse Sensitivity")]
-    [SerializeField] private float mouseSensitivityX = 0.8f; // Reduziert für präzisere Kontrolle
-    [SerializeField] private float mouseSensitivityY = 0.8f;
+    [SerializeField] private float mouseSensitivityX = 0.2f; // Reduziert für präzisere Kontrolle
+    [SerializeField] private float mouseSensitivityY = 0.2f;
 
     // Current state
     private float currentDistance;

@@ -59,9 +59,6 @@ public class PlayerController : NetworkBehaviour
 
         // Set ground mask to everything except Player layer
         groundMask = ~(1 << LayerMask.NameToLayer("Player"));
-
-        // Lock cursor for better mouse look
-        Cursor.lockState = CursorLockMode.Confined;
     }
 
     void Update()
@@ -219,10 +216,11 @@ public class PlayerController : NetworkBehaviour
 
     void HandleRotation()
     {
-        // WoW-Style: Rechte Maustaste = Character schaut IMMER in Kamera-Richtung
-        if (rightMouseHeld)
+        // WoW-Style: NUR Rechte Maustaste = Character schaut in Kamera-Richtung
+        // WICHTIG: leftMouseHeld darf NICHT den Character drehen!
+        if (rightMouseHeld && !leftMouseHeld)
         {
-            // Character rotiert immer zur Kamera-Richtung
+            // Character rotiert zur Kamera-Richtung
             Vector3 cameraForward = cameraController.transform.forward;
             cameraForward.y = 0; // Nur horizontale Rotation
 
@@ -233,8 +231,22 @@ public class PlayerController : NetworkBehaviour
                     Time.deltaTime * 15f); // Schnelle Rotation zur Kamera
             }
         }
-        // Ohne rechte Maustaste: Character dreht sich in Bewegungsrichtung (nur am Boden)
-        else if (!bothMouseHeld && (horizontal != 0 || vertical != 0) && isGrounded)
+        // Beide Maustasten = auch Character-Rotation zur Kamera (für Vorwärtslaufen)
+        else if (bothMouseHeld)
+        {
+            Vector3 cameraForward = cameraController.transform.forward;
+            cameraForward.y = 0;
+
+            if (cameraForward != Vector3.zero)
+            {
+                targetRotation = Quaternion.LookRotation(cameraForward);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation,
+                    Time.deltaTime * 15f);
+            }
+        }
+        // Keyboard Movement ohne Maus: Character dreht sich in Bewegungsrichtung
+        else if (!leftMouseHeld && !rightMouseHeld && !bothMouseHeld &&
+                 (horizontal != 0 || vertical != 0) && isGrounded)
         {
             Vector3 moveDirection = new Vector3(horizontalVelocity.x, 0, horizontalVelocity.z);
             if (moveDirection != Vector3.zero)

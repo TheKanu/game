@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Runtime.InteropServices;
 
 public class CameraController : MonoBehaviour
 {
@@ -52,6 +53,13 @@ public class CameraController : MonoBehaviour
     private bool leftMouseHeld;
     private bool rightMouseHeld;
     private bool middleMouseHeld;
+    private bool wasRotating = false; // NEU: Track ob wir gerade rotieren
+
+    // NEU: Mouse Position Locking für WoW-Style Verhalten
+    private Vector3 lockedMousePosition; // Screen position wo Rechtsklick gedrückt wurde
+    private bool isMouseLocked = false;
+    private Vector3 mouseStartPosition; // Wo die Maus war als wir anfingen zu rotieren
+    private Vector3 mouseDelta; // Accumulated mouse movement
 
     // NEU: Dead zone für präzisere Kontrolle
     [SerializeField] private bool useDeadZone = false;
@@ -81,6 +89,10 @@ public class CameraController : MonoBehaviour
 
         // Set collision layers (everything except Player)
         collisionLayers = ~(1 << LayerMask.NameToLayer("Player"));
+
+        // Ensure cursor is visible and free at start
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     void LateUpdate()
@@ -96,14 +108,63 @@ public class CameraController : MonoBehaviour
 
     void HandleInput()
     {
+        // Check mouse button states
+        bool leftPressed = Input.GetMouseButtonDown(0);
+        bool rightPressed = Input.GetMouseButtonDown(1);
+        bool middlePressed = Input.GetMouseButtonDown(2);
+
+        bool leftReleased = Input.GetMouseButtonUp(0);
+        bool rightReleased = Input.GetMouseButtonUp(1);
+        bool middleReleased = Input.GetMouseButtonUp(2);
+
         leftMouseHeld = Input.GetMouseButton(0);
         rightMouseHeld = Input.GetMouseButton(1);
         middleMouseHeld = Input.GetMouseButton(2);
+
+        // Mouse Lock Logic - WoW Style
+        bool shouldStartRotating = (leftPressed || rightPressed || middlePressed) && !isMouseLocked;
+        bool shouldStopRotating = (leftReleased || rightReleased || middleReleased) &&
+                                   !(leftMouseHeld || rightMouseHeld || middleMouseHeld);
+
+        if (shouldStartRotating)
+        {
+            StartMouseLock();
+        }
+        else if (shouldStopRotating)
+        {
+            StopMouseLock();
+        }
+    }
+
+    void StartMouseLock()
+    {
+        // Merke aktuelle Mausposition als Startpunkt
+        mouseStartPosition = Input.mousePosition;
+        lockedMousePosition = mouseStartPosition;
+        isMouseLocked = true;
+        mouseDelta = Vector3.zero;
+
+        // Verstecke Cursor - WoW Style
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked; // Locked mode für echtes WoW-Gefühl
+
+        Debug.Log($"Mouse locked - rotation mode started");
+    }
+
+    void StopMouseLock()
+    {
+        isMouseLocked = false;
+
+        // Zeige Cursor wieder und entsperre
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+
+        Debug.Log($"Mouse unlocked - rotation mode ended");
     }
 
     void HandleRotation()
     {
-        // Camera rotation with left mouse, right mouse, or middle mouse
+        // Camera rotation nur wenn eine Maustaste gedrückt ist
         if (leftMouseHeld || rightMouseHeld || middleMouseHeld)
         {
             float mouseX = Input.GetAxis("Mouse X");
@@ -209,6 +270,12 @@ public class CameraController : MonoBehaviour
     {
         mouseSensitivityX = Mathf.Clamp(x, 0.1f, 3f);
         mouseSensitivityY = Mathf.Clamp(y, 0.1f, 3f);
+    }
+
+    // Debug info für die aktuellen Einstellungen
+    public void PrintCameraDebugInfo()
+    {
+        Debug.Log($"Camera State - Locked: {isMouseLocked}, Distance: {currentDistance:F1}, Rotation: X={rotationX:F1} Y={rotationY:F1}");
     }
 
     void OnDrawGizmosSelected()
